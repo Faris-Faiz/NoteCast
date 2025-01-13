@@ -16,8 +16,18 @@ import google.generativeai as genai
 st.set_page_config(
     page_title="NoteCast - Notes to Podcast Converter",
     page_icon="🎙️",
-    layout="wide"
+    layout="centered",
+    initial_sidebar_state="expanded"
 )
+
+# Custom styles
+st.markdown("""
+    <style>
+        .main > div {
+            padding: 2rem 3rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Initialize session state
 if 'conversation_history' not in st.session_state:
@@ -92,75 +102,149 @@ def synthesize_speech(text, voice_name):
     pass
 
 def main():
-    st.title("NoteCast - Transform Your Notes into Podcasts 🎙️")
-    
     # Initialize TTS Engine
     tts_engine = TTSEngine()
     
-    # Sidebar for API configuration
+    # Header
+    st.title("NoteCast 🎙️")
+    st.markdown("Transform your notes into engaging podcast conversations")
+    
+    # Sidebar configuration
     with st.sidebar:
-        st.header("Configuration")
-        gemini_api_key = st.text_input("Gemini API Key:", type="password")
+        st.header("⚙️ Configuration")
         
-        st.header("Voice Selection")
-        available_voices = tts_engine.get_available_voices()
-        speaker1_voice = st.selectbox("Select Host Voice", list(available_voices.keys()))
-        speaker2_voice = st.selectbox("Select Expert Voice", list(available_voices.keys()))
+        # API Configuration
+        with st.expander("API Settings", expanded=True):
+            gemini_api_key = st.text_input(
+                "Gemini API Key",
+                type="password",
+                help="Enter your Gemini API key to enable AI features"
+            )
+        
+        # Voice Configuration
+        with st.expander("Voice Settings", expanded=True):
+            st.markdown("##### Select voices for your podcast speakers")
+            available_voices = tts_engine.get_available_voices()
+            speaker1_voice = st.selectbox(
+                "Host Voice",
+                list(available_voices.keys()),
+                help="Voice for the podcast host"
+            )
+            speaker2_voice = st.selectbox(
+                "Expert Voice",
+                list(available_voices.keys()),
+                help="Voice for the expert guest"
+            )
 
     # Check for missing voice models
     missing_models = tts_engine.check_voice_models()
     if missing_models:
-        st.warning(f"Missing voice models: {', '.join(missing_models)}")
+        st.warning("⚠️ Some voice models are missing. Please check your installation.", icon="⚠️")
+        with st.expander("Missing Models Details"):
+            st.write(", ".join(missing_models))
 
     # Main content area
-    uploaded_file = st.file_uploader("Upload your notes (PDF, DOCX, or Image)", type=['pdf', 'docx', 'png', 'jpg', 'jpeg'])
+    st.markdown("### 📝 Step 1: Upload Your Notes")
+    uploaded_file = st.file_uploader(
+        "Choose a PDF, DOCX, or image file",
+        type=['pdf', 'docx', 'png', 'jpg', 'jpeg'],
+        help="Supported formats: PDF, Word documents, and images (PNG, JPG)"
+    )
     
     if uploaded_file is not None:
-        with st.spinner("Processing your file..."):
-            # Extract text based on file type
-            file_type = uploaded_file.type
-            if file_type == "application/pdf":
-                text = extract_text_from_pdf(uploaded_file)
-            elif file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                text = extract_text_from_docx(uploaded_file)
-            elif file_type.startswith("image/"):
-                text = extract_text_from_image(uploaded_file)
-            
-            st.text_area("Extracted Text", text, height=200)
-            
-            if st.button("Generate Summary"):
-                if gemini_api_key:
-                    with st.spinner("Generating summary..."):
-                        summary = generate_summary(text, gemini_api_key)
-                        if summary:
-                            st.session_state.current_summary = summary
-                            st.text_area("Generated Summary", summary, height=200)
-                else:
-                    st.error("Please enter your Gemini API key in the sidebar.")
-            
-            if st.session_state.current_summary and st.button("Generate Podcast Script"):
-                if gemini_api_key:
-                    with st.spinner("Generating podcast script..."):
-                        script = generate_podcast_script(st.session_state.current_summary, gemini_api_key)
-                        if script:
-                            st.session_state.current_script = script
-                            st.text_area("Generated Podcast Script", script, height=300)
-                else:
-                    st.error("Please enter your Gemini API key in the sidebar.")
-            
-            if st.session_state.current_script and st.button("Generate Audio"):
-                with st.spinner("Generating audio..."):
-                    try:
-                        audio_path = tts_engine.generate_podcast_audio(
-                            st.session_state.current_script, 
-                            speaker1_voice, 
-                            speaker2_voice
-                        )
-                        st.session_state.generated_audio_path = audio_path
-                        st.success("Audio generated successfully!")
-                        st.audio(audio_path)
-                    except Exception as e:
-                        st.error(f"Error generating audio: {str(e)}")
+        # Create tabs for the conversion process
+        tab1, tab2, tab3, tab4 = st.tabs(["📄 Extracted Text", "📝 Summary", "🎭 Script", "🎧 Audio"])
+        
+        with tab1:
+            st.markdown("### 📄 Step 2: Review Extracted Text")
+            with st.spinner("Extracting text from your document..."):
+                # Extract text based on file type
+                file_type = uploaded_file.type
+                if file_type == "application/pdf":
+                    text = extract_text_from_pdf(uploaded_file)
+                elif file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                    text = extract_text_from_docx(uploaded_file)
+                elif file_type.startswith("image/"):
+                    text = extract_text_from_image(uploaded_file)
+                
+                st.text_area(
+                    "Extracted Content",
+                    text,
+                    height=300,
+                    help="Review the extracted text before generating the summary"
+                )
+                
+                if st.button("Generate Summary", type="primary"):
+                    if not gemini_api_key:
+                        st.error("🔑 Please enter your Gemini API key in the sidebar first.")
+                    else:
+                        with st.spinner("🤖 AI is summarizing your content..."):
+                            summary = generate_summary(text, gemini_api_key)
+                            if summary:
+                                st.session_state.current_summary = summary
+                                st.success("✅ Summary generated successfully! Switch to the Summary tab.")
+        
+        with tab2:
+            st.markdown("### 📝 Step 3: Review Summary")
+            if st.session_state.current_summary:
+                st.text_area(
+                    "Generated Summary",
+                    st.session_state.current_summary,
+                    height=300,
+                    help="Review the AI-generated summary"
+                )
+                
+                if st.button("Create Podcast Script", type="primary"):
+                    if not gemini_api_key:
+                        st.error("🔑 Please enter your Gemini API key in the sidebar first.")
+                    else:
+                        with st.spinner("🤖 AI is creating your podcast script..."):
+                            script = generate_podcast_script(st.session_state.current_summary, gemini_api_key)
+                            if script:
+                                st.session_state.current_script = script
+                                st.success("✅ Podcast script created! Switch to the Script tab.")
+            else:
+                st.info("👈 Generate a summary from the Extracted Text tab first")
+        
+        with tab3:
+            st.markdown("### 🎭 Step 4: Review Script")
+            if st.session_state.current_script:
+                st.text_area(
+                    "Podcast Script",
+                    st.session_state.current_script,
+                    height=400,
+                    help="Review the conversation script between Host and Expert"
+                )
+                
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    if st.button("Generate Audio", type="primary"):
+                        with st.spinner("🎵 Generating podcast audio..."):
+                            try:
+                                audio_path = tts_engine.generate_podcast_audio(
+                                    st.session_state.current_script,
+                                    speaker1_voice,
+                                    speaker2_voice
+                                )
+                                st.session_state.generated_audio_path = audio_path
+                                st.success("✅ Audio generated! Switch to the Audio tab.")
+                            except Exception as e:
+                                st.error(f"❌ Error generating audio: {str(e)}")
+            else:
+                st.info("👈 Create a podcast script from the Summary tab first")
+        
+        with tab4:
+            st.markdown("### 🎧 Step 5: Listen to Your Podcast")
+            if st.session_state.generated_audio_path:
+                st.audio(st.session_state.generated_audio_path)
+                st.download_button(
+                    "⬇️ Download Podcast",
+                    data=open(st.session_state.generated_audio_path, 'rb'),
+                    file_name="notecast_podcast.wav",
+                    mime="audio/wav"
+                )
+            else:
+                st.info("👈 Generate audio from the Script tab first")
 
 if __name__ == "__main__":
     main()
