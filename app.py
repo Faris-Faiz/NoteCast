@@ -10,6 +10,7 @@ import os
 import json
 import tempfile
 from tts_utils import TTSEngine  # Import the TTSEngine
+import google.generativeai as genai
 
 # Configure page settings
 st.set_page_config(
@@ -47,30 +48,40 @@ def extract_text_from_image(image_file):
     text = pytesseract.image_to_string(image)
     return text
 
-def generate_summary(text):
+def generate_summary(text, api_key):
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a professional content summarizer. Create a concise but comprehensive summary of the following text while maintaining key points and academic integrity."},
-                {"role": "user", "content": text}
-            ]
+        # Initialize the Gemini API with the user-provided API key
+        genai.configure(api_key=api_key)
+
+        # Set up the model (e.g., 'gemini-pro' for text generation)
+        model = genai.GenerativeModel('gemini-pro')
+
+        # Generate the summary
+        response = model.generate_content(
+            f"Summarize the following text while maintaining key points and academic integrity:\n\n{text}"
         )
-        return response.choices[0].message.content
+
+        # Return the generated summary
+        return response.text
     except Exception as e:
         st.error(f"Error generating summary: {str(e)}")
         return None
 
-def generate_podcast_script(summary):
+def generate_podcast_script(summary, api_key):
     try:
-        response = openrouter.ChatCompletion.create(
-            model="gryphe/mythomax-l2-13b",
-            messages=[
-                {"role": "system", "content": "You are a podcast script writer. Convert this summary into a natural, conversational dialogue between two speakers (Host and Expert). Include smooth transitions and maintain a casual yet informative tone."},
-                {"role": "user", "content": summary}
-            ]
+        # Initialize the Gemini API with the user-provided API key
+        genai.configure(api_key=api_key)
+
+        # Set up the model (e.g., 'gemini-pro' for text generation)
+        model = genai.GenerativeModel('gemini-pro')
+
+        # Generate the podcast script
+        response = model.generate_content(
+            f"You are a podcast script writer. Convert this summary into a natural, conversational dialogue between two speakers (Host and Expert). Include smooth transitions and maintain a casual yet informative tone.\n\nSummary:\n{summary}"
         )
-        return response.choices[0].message.content
+
+        # Return the generated podcast script
+        return response.text
     except Exception as e:
         st.error(f"Error generating podcast script: {str(e)}")
         return None
@@ -89,8 +100,7 @@ def main():
     # Sidebar for API configuration
     with st.sidebar:
         st.header("Configuration")
-        openai_api_key = st.text_input("OpenAI API Key", type="password")
-        openrouter_api_key = st.text_input("OpenRouter API Key", type="password")
+        gemini_api_key = st.text_input("Gemini API Key:", type="password")
         
         st.header("Voice Selection")
         available_voices = tts_engine.get_available_voices()
@@ -119,26 +129,24 @@ def main():
             st.text_area("Extracted Text", text, height=200)
             
             if st.button("Generate Summary"):
-                if openai_api_key:
-                    openai.api_key = openai_api_key
+                if gemini_api_key:
                     with st.spinner("Generating summary..."):
-                        summary = generate_summary(text)
+                        summary = generate_summary(text, gemini_api_key)
                         if summary:
                             st.session_state.current_summary = summary
                             st.text_area("Generated Summary", summary, height=200)
                 else:
-                    st.error("Please enter your OpenAI API key in the sidebar.")
+                    st.error("Please enter your Gemini API key in the sidebar.")
             
             if st.session_state.current_summary and st.button("Generate Podcast Script"):
-                if openrouter_api_key:
-                    openrouter.api_key = openrouter_api_key
+                if gemini_api_key:
                     with st.spinner("Generating podcast script..."):
-                        script = generate_podcast_script(st.session_state.current_summary)
+                        script = generate_podcast_script(st.session_state.current_summary, gemini_api_key)
                         if script:
                             st.session_state.current_script = script
                             st.text_area("Generated Podcast Script", script, height=300)
                 else:
-                    st.error("Please enter your OpenRouter API key in the sidebar.")
+                    st.error("Please enter your Gemini API key in the sidebar.")
             
             if st.session_state.current_script and st.button("Generate Audio"):
                 with st.spinner("Generating audio..."):
