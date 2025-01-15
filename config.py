@@ -19,17 +19,17 @@ PIPER_VOICES = {
         "gender": "Male",
         "model_path": os.path.join(PIPER_MODELS_DIR, "en_US-joe-medium.onnx"),
     },
-    "en_GB/george": {
-        "name": "George",
+    "en_GB/semaine": {
+        "name": "Semaine",
+        "language": "English (UK)",
+        "gender": "Female",
+        "model_path": os.path.join(PIPER_MODELS_DIR, "en_GB-semaine-medium.onnx"),
+    },
+    "en_US/alan": {
+        "name": "Alan",
         "language": "English (UK)",
         "gender": "Male",
-        "model_path": os.path.join(PIPER_MODELS_DIR, "en_GB-george-medium.onnx"),
-    },
-    "en_US/beth": {
-        "name": "Beth",
-        "language": "English (US)",
-        "gender": "Female",
-        "model_path": os.path.join(PIPER_MODELS_DIR, "en_US-beth-medium.onnx"),
+        "model_path": os.path.join(PIPER_MODELS_DIR, "en_GB-alan-medium.onnx"),
     }
 }
 

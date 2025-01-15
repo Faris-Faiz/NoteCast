@@ -87,7 +87,7 @@ def generate_podcast_script(summary, api_key):
 
         # Generate the podcast script
         response = model.generate_content(
-            f"You are a podcast script writer. Convert this summary into a natural, conversational dialogue between two speakers (Host and Expert). Include smooth transitions and maintain a casual yet informative tone.\n\nSummary:\n{summary}"
+            f"You are a podcast script writer. Convert this summary into a natural, conversational dialogue between two speakers (Host and Expert). Create a suitable name and title for the speakers. Include smooth transitions and maintain a casual yet informative tone.Format of the script would be: Host: .... \n Expert: .... \n (and continue) DO NOT FORMAT IT ANY OTHER WAY (bolded, italic, line, etc. do not put **host/expert**) \n\nSummary:\n{summary}"
         )
 
         # Return the generated podcast script
@@ -97,9 +97,30 @@ def generate_podcast_script(summary, api_key):
         return None
 
 def synthesize_speech(text, voice_name):
+    """
+    Synthesize speech from the given text using the specified voice.
+
+    Args:
+        text (str): The text to synthesize.
+        voice_name (str): The name of the voice to use for synthesis.
+
+    Returns:
+        str: The path to the synthesized audio file.
+    """
     # Implement Piper TTS synthesis here
+    
     # This is a placeholder - actual implementation will depend on Piper's API
-    pass
+    try:
+        # Initialize the TTSEngine
+        tts_engine = TTSEngine()
+        
+        # Synthesize the speech using the TTSEngine
+        audio_path = tts_engine._synthesize_segment(text, voice_name)
+        
+        return audio_path
+    except Exception as e:
+        st.error(f"Error synthesizing speech: {str(e)}")
+        return None
 
 def main():
     # Initialize TTS Engine
@@ -223,8 +244,8 @@ def main():
                             try:
                                 audio_path = tts_engine.generate_podcast_audio(
                                     st.session_state.current_script,
-                                    speaker1_voice,
-                                    speaker2_voice
+                                    speaker1_voice, #Host
+                                    speaker2_voice #Expert
                                 )
                                 st.session_state.generated_audio_path = audio_path
                                 st.success("✅ Audio generated! Switch to the Audio tab.")

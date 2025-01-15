@@ -29,7 +29,8 @@ class TTSEngine:
                 continue
                 
             # Check for speaker indicators
-            if line.startswith(('Host:', 'Expert:')):
+            # Have to add asterisks bcs all generation of script have this almost-consistent formatting
+            if line.startswith(('**Host:**', '**Expert:**')):
                 if current_speaker and current_text:
                     segments.append({
                         'speaker': current_speaker,
@@ -55,22 +56,37 @@ class TTSEngine:
             voice_config = self.voices[voice_name]
             model_path = voice_config['model_path']
             
+            # Debug: Print the model path
+            print(f"Model path: {model_path}")
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Model file not found: {model_path}")
+            
             # Create a temporary file for the text
             with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as temp_text:
                 temp_text.write(text)
                 text_path = temp_text.name
             
+            # Debug: Print the text path
+            print(f"Text file created at: {text_path}")
+            
             # Create a temporary file for the output audio
             with tempfile.NamedTemporaryFile(suffix=f'.{AUDIO_FORMAT}', delete=False) as temp_audio:
                 output_path = temp_audio.name
             
+            # Debug: Print the output path
+            print(f"Output audio file will be saved at: {output_path}")
+            
             # Run Piper TTS command
             cmd = [
-                'piper',
+                #point this to YOUR piper path in Scripts or Bin (for linux)
+                r'C:\Users\user\anaconda3\envs\notecast\Scripts\piper.exe',  # Ensure 'piper' is in your PATH.
                 '--model', model_path,
                 '--output_file', output_path,
                 '--text_file', text_path
             ]
+            
+            # Debug: Print the command
+            print(f"Running command: {' '.join(cmd)}")
             
             process = subprocess.run(
                 cmd,
@@ -78,6 +94,10 @@ class TTSEngine:
                 text=True,
                 check=True
             )
+            
+            # Debug: Print the command output
+            print(f"Command output: {process.stdout}")
+            print(f"Command error (if any): {process.stderr}")
             
             # Clean up the temporary text file
             os.unlink(text_path)
@@ -128,7 +148,7 @@ class TTSEngine:
             # Synthesize each segment
             audio_files = []
             for segment in segments:
-                voice = host_voice if segment['speaker'] == 'host' else expert_voice
+                voice = host_voice if segment['speaker'] == '**host' else expert_voice
                 audio_path = self._synthesize_segment(segment['text'], voice)
                 audio_files.append(audio_path)
             
