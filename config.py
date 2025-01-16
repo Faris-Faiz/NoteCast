@@ -1,10 +1,25 @@
 import os
 
 # API Configuration
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENAI_API_KEY = "OPENAI_API_KEY"
+OPENROUTER_API_KEY = "OpenRouter_API_KEY"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "use api key"
 
-# Piper TTS Configuration
+
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY is not set. Please set it as an environment variable.")
+
+if not OPENROUTER_API_KEY:
+    raise ValueError("OPENROUTER_API_KEY is not set. Please set it as an environment variable.")
+
+# Google Cloud TTS Configuration
+# Set the path to your Google Cloud service account JSON key
+GOOGLE_CLOUD_TTS_CREDENTIALS = "Google Cloud TTS credentials"
+
+# Ensure the Google Cloud TTS credentials environment variable is set
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_CLOUD_TTS_CREDENTIALS
+
+# Piper TTS Configuration (if you plan to use Piper later)
 PIPER_MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 PIPER_VOICES = {
     "en_US/amy": {
@@ -57,3 +72,4 @@ SCRIPT_TEMPERATURE = 0.8
 # UI Configuration
 SUPPORTED_FILE_TYPES = ['pdf', 'docx', 'png', 'jpg', 'jpeg']
 SUPPORTED_LANGUAGES = ['en-US', 'en-GB']
+

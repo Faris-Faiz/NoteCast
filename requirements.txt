@@ -11,3 +11,4 @@ piper
 google   
 openrouter
 streamlit
+google-cloud-texttospeech
