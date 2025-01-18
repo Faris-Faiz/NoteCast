@@ -1,9 +1,13 @@
 streamlit==1.28.1
 openai
-openrouter-py==0.3.0
-piper-tts==1.1.0
+#openrouter-py==0.3.0
+#piper-tts==1.1.0
 python-docx==0.8.11
 PyPDF2==3.0.1
 pillow==10.1.0
 pytesseract==0.3.10
-google-generativeai
+google.generativeai
+piper      
+google   
+openrouter
+streamlit
