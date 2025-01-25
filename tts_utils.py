@@ -29,15 +29,14 @@ class TTSEngine:
                 continue
                 
             # Check for speaker indicators
-            # Have to add asterisks bcs all generation of script have this almost-consistent formatting
             if line.startswith(('**Host:**', '**Expert:**')):
                 if current_speaker and current_text:
                     segments.append({
                         'speaker': current_speaker,
                         'text': ' '.join(current_text)
                     })
-                current_speaker = line.split(':')[0].lower()
-                current_text = [line.split(':', 1)[1].strip()]
+                current_speaker = line.split(':**')[0].lower()
+                current_text = [line.split(':**', 1)[1].strip()]
             else:
                 current_text.append(line)
         
@@ -61,14 +60,6 @@ class TTSEngine:
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Model file not found: {model_path}")
             
-            # Create a temporary file for the text
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as temp_text:
-                temp_text.write(text)
-                text_path = temp_text.name
-            
-            # Debug: Print the text path
-            print(f"Text file created at: {text_path}")
-            
             # Create a temporary file for the output audio
             with tempfile.NamedTemporaryFile(suffix=f'.{AUDIO_FORMAT}', delete=False) as temp_audio:
                 output_path = temp_audio.name
@@ -78,34 +69,30 @@ class TTSEngine:
             
             # Run Piper TTS command
             cmd = [
-                #point this to YOUR piper path in Scripts or Bin (for linux)
-                r'C:\Users\user\anaconda3\envs\notecast\Scripts\piper.exe',  # Ensure 'piper' is in your PATH.
+                '/system/conda/miniconda3/envs/cloudspace/bin/piper',  # Ensure 'piper' is in your PATH
                 '--model', model_path,
-                '--output_file', output_path,
-                '--text_file', text_path
+                '--output_file', output_path
             ]
             
             # Debug: Print the command
             print(f"Running command: {' '.join(cmd)}")
             
+            # Pass the text to piper via stdin
             process = subprocess.run(
                 cmd,
+                input=text.encode('utf-8'),  # Pass the text as input
                 capture_output=True,
-                text=True,
                 check=True
             )
             
             # Debug: Print the command output
-            print(f"Command output: {process.stdout}")
-            print(f"Command error (if any): {process.stderr}")
-            
-            # Clean up the temporary text file
-            os.unlink(text_path)
+            print(f"Command output: {process.stdout.decode('utf-8')}")
+            print(f"Command error (if any): {process.stderr.decode('utf-8')}")
             
             return output_path
             
         except subprocess.CalledProcessError as e:
-            print(f"Error running Piper TTS: {e.stderr}")
+            print(f"Error running Piper TTS: {e.stderr.decode('utf-8')}")
             raise
         except Exception as e:
             print(f"Error synthesizing speech: {str(e)}")
@@ -148,6 +135,7 @@ class TTSEngine:
             # Synthesize each segment
             audio_files = []
             for segment in segments:
+                print(segment['speaker'])
                 voice = host_voice if segment['speaker'] == '**host' else expert_voice
                 audio_path = self._synthesize_segment(segment['text'], voice)
                 audio_files.append(audio_path)
